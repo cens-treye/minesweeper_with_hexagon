@@ -1,6 +1,9 @@
-const GRID_SIZE = 15;
-const NUM_BOMBS = 30;
 const RADIUS = 25; // 正六角形の外心の半径
+
+const GRID_SIZE_X = 12;
+const GRID_SIZE_Y = 40;
+let totalCells = GRID_SIZE_X * GRID_SIZE_Y;
+const NUM_BOMBS = Math.floor(totalCells * 0.2);
 
 let grid = [];
 let opened = [];
@@ -9,19 +12,20 @@ let gameStarted = false;
 let gameOver = false;
 let timerInterval;
 let timeElapsed = 0;
-let totalCells = GRID_SIZE * GRID_SIZE;
 let openedCells = 0;
 let longPressTimer;
+
+const temp = 0.9;
 
 function initializeGrid() {
   grid = [];
   opened = [];
   flagged = [];
-  for (let i = 0; i < GRID_SIZE; i++) {
+  for (let i = 0; i < GRID_SIZE_Y; i++) {
     grid[i] = [];
     opened[i] = [];
     flagged[i] = [];
-    for (let j = 0; j < GRID_SIZE; j++) {
+    for (let j = 0; j < GRID_SIZE_X; j++) {
       grid[i][j] = 0;
       opened[i][j] = false;
       flagged[i][j] = false;
@@ -32,9 +36,11 @@ function initializeGrid() {
 function placeBombs(firstClickRow, firstClickCol) {
   let bombsPlaced = 0;
   while (bombsPlaced < NUM_BOMBS) {
-    const row = Math.floor(Math.random() * GRID_SIZE);
-    const col = Math.floor(Math.random() * GRID_SIZE);
+    const row = Math.floor(Math.random() * grid.length);
+    const col = Math.floor(Math.random() * grid[row].length);
     if (grid[row][col] !== -1 && (row !== firstClickRow || col !== firstClickCol)) {
+      const cnt = countAdjacentBombs(row, col);
+      if (Math.random() > Math.pow(temp, cnt)) continue;
       grid[row][col] = -1;
       bombsPlaced++;
     }
@@ -42,21 +48,21 @@ function placeBombs(firstClickRow, firstClickCol) {
 }
 
 function calculateNumbers() {
-  for (let i = 0; i < GRID_SIZE; i++) {
-    for (let j = 0; j < GRID_SIZE; j++) {
-      if (grid[i][j] !== -1) {
+  grid.forEach((row, i) => {
+    row.forEach((cell, j) => {
+      if (cell !== -1) {
         const count = countAdjacentBombs(i, j);
         grid[i][j] = count;
       }
-    }
-  }
+    });
+  });
 }
 
 function countAdjacentBombs(row, col) {
   let count = 0;
   const neighbors = getNeighbors(row, col);
   for (const [r, c] of neighbors) {
-    if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE && grid[r][c] === -1) {
+    if (grid[r][c] === -1) {
       count++;
     }
   }
@@ -64,7 +70,7 @@ function countAdjacentBombs(row, col) {
 }
 
 function getNeighbors(row, col) {
-  const neighbors = [
+  let neighbors = [
     [row - 1, col],
     [row + 1, col],
     [row - 2, col],
@@ -75,6 +81,7 @@ function getNeighbors(row, col) {
   } else {
     neighbors.push([row - 1, col + 1], [row + 1, col + 1]);
   }
+  neighbors = neighbors.filter(([r, c]) => r >= 0 && r < grid.length && c >= 0 && c < grid[r].length);
   return neighbors;
 }
 
@@ -83,10 +90,10 @@ function renderGrid() {
   hexGrid.innerHTML = "";
   const height = (RADIUS * Math.sqrt(3)) / 2;
   const width = RADIUS * 1.5;
-  for (let i = 0; i < GRID_SIZE; i++) {
+  for (let i = 0; i < GRID_SIZE_Y; i++) {
     const row = document.createElement("div");
     row.className = "hex-row";
-    for (let j = 0; j < GRID_SIZE; j++) {
+    for (let j = 0; j < GRID_SIZE_X; j++) {
       const hex = document.createElement("div");
       hex.className = "hex";
       hex.style.position = "absolute";
@@ -109,8 +116,8 @@ function renderGrid() {
     }
     hexGrid.appendChild(row);
   }
-  hexGrid.style.width = `${width * (GRID_SIZE + 0.5)}px`;
-  hexGrid.style.height = `${height * GRID_SIZE * 0.75 + RADIUS}px`;
+  hexGrid.style.width = `${width * (GRID_SIZE_X + 0.5)}px`;
+  hexGrid.style.height = `${height * GRID_SIZE_X * 0.75 + RADIUS}px`;
   hexGrid.style.position = "relative";
 }
 
@@ -153,7 +160,7 @@ function handleMiddleClick(event) {
       }
       document.addEventListener("touchend", removeSurroundingClass);
       document.addEventListener("touchcancel", removeSurroundingClass);
-    }, 500); // Adjust the duration for long press as needed
+    }, 500);
   } else {
     clearTimeout(longPressTimer);
     if (event.type === "touchend" || event.type === "touchcancel") return;
@@ -177,7 +184,7 @@ function handleMiddleClick(event) {
 function changeAdjacentCellsColor(row, col) {
   const neighbors = getNeighbors(row, col);
   for (const [r, c] of neighbors) {
-    if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE && !flagged[r][c] && !opened[r][c]) {
+    if (!flagged[r][c] && !opened[r][c]) {
       const cell = document.querySelector(`.hex[data-row="${r}"][data-col="${c}"]`);
       if (cell) {
         cell.classList.add("surrounding");
@@ -201,15 +208,13 @@ function autoFlagAdjacentCells(row, col) {
   const neighbors = getNeighbors(row, col);
   let unopenedCount = 0;
   for (const [r, c] of neighbors) {
-    if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-      if (!opened[r][c]) {
-        unopenedCount++;
-      }
+    if (!opened[r][c]) {
+      unopenedCount++;
     }
   }
   if (unopenedCount === grid[row][col]) {
     for (const [r, c] of neighbors) {
-      if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE && !opened[r][c] && !flagged[r][c]) {
+      if (!opened[r][c] && !flagged[r][c]) {
         toggleFlag(r, c);
       }
     }
@@ -223,13 +228,13 @@ function openAdjacentCells(row, col) {
   const neighbors = getNeighbors(row, col);
   let flagCount = 0;
   for (const [r, c] of neighbors) {
-    if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE && flagged[r][c]) {
+    if (flagged[r][c]) {
       flagCount++;
     }
   }
   if (flagCount === grid[row][col]) {
     for (const [r, c] of neighbors) {
-      if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE && !flagged[r][c]) {
+      if (!flagged[r][c]) {
         openCell(r, c);
       }
     }
@@ -255,9 +260,7 @@ function openCell(row, col) {
   } else if (grid[row][col] === 0) {
     const neighbors = getNeighbors(row, col);
     for (const [r, c] of neighbors) {
-      if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-        openCell(r, c);
-      }
+      openCell(r, c);
     }
   } else {
     cell.textContent = grid[row][col];
@@ -302,8 +305,8 @@ function endGame(isWin) {
 }
 
 function revealAllBombs() {
-  for (let i = 0; i < GRID_SIZE; i++) {
-    for (let j = 0; j < GRID_SIZE; j++) {
+  for (let i = 0; i < grid.length; i++) {
+    for (let j = 0; j < grid[i].length; j++) {
       if (grid[i][j] === -1) {
         const cell = document.querySelector(`.hex[data-row="${i}"][data-col="${j}"]`);
         cell.classList.add("bomb");
