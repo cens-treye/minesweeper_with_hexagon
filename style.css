@@ -51,8 +51,10 @@ body {
 }
 
 #hexGrid {
-  width: 80vw !important;
-  height: 80vh !important;
+  margin-top: 20px;
+  width: 90vw !important;
+  height: 75vh !important;
+  padding: 20px;
   overflow-x: auto;
 }
 
