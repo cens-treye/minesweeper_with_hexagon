@@ -1,0 +1,114 @@
+:root {
+  --radius: 50px;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  background-color: #c9c9c9;
+  height: 100vh;
+}
+
+#title {
+  text-align: center;
+  margin-top: 20px;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#operation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+#restart-button {
+  margin-bottom: 10px;
+  padding: 10px 20px;
+  background-color: #ddd;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#game-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  max-width: 600px;
+  min-width: 500px;
+  overflow-x: auto;
+  align-items: center;
+}
+
+#hexGrid {
+  width: 80vw !important;
+  height: 80vh !important;
+  overflow-x: auto;
+}
+
+.hex-row {
+  display: flex;
+}
+
+.hex {
+  width: calc(var(--radius));
+  height: calc(var(--radius));
+  background-color: #ddd;
+  clip-path: polygon(100% 50%, 75% 93.30127019%, 25% 93.30127019%, 0% 50%, 25% 6.69872981%, 75% 6.69872981%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hex.opened {
+  background-color: #fff;
+}
+
+.hex.surrounding {
+  background-color: #ffcccb;
+}
+
+.hex.flagged::after {
+  content: "🚩";
+}
+
+.hex.bomb::after {
+  content: "💣";
+}
+
+.hex:not(.opened):not(.flagged):hover {
+  animation: colorChange 0.3s forwards;
+}
+
+@keyframes colorChange {
+  0% {
+    background-color: #ddd;
+  }
+
+  100% {
+    background-color: rgb(183, 183, 183);
+  }
+}
+
+#game-info {
+  margin-bottom: 20px;
+}
+
+#restart-button {
+  font-size: 16px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
